@@ -1,14 +1,14 @@
 <template>
-  <HelloWorld msg="Welcome to Go-Tasker Web!"/>
+  <Tasker msg="Welcome to Go Tasker!"/>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import Tasker from './components/Tasker.vue'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+   Tasker 
   }
 }
 </script>
