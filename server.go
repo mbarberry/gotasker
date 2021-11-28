@@ -125,9 +125,11 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	task := request.Task 	
 	fmt.Printf("The task to add is: %s\n", task)
 	if task == "" {
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "Cannot add an empty task.")
-	} else {
+	//	w.WriteHeader(400)
+	//	fmt.Fprintf(w, "Cannot add an empty task.")
+		http.Error(w, "Cannot add an empty task.", http.StatusBadRequest)
+		return 
+	} //  else {
 		addTask := &Task{
 			ID:        primitive.NewObjectID(),
         	CreatedAt: time.Now(),
@@ -144,7 +146,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
-	}	
+//	}	
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
