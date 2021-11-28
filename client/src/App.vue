@@ -1,5 +1,7 @@
 <template>
-  <Tasker msg="Welcome to Go Tasker!"/>
+	<div class="shadow-2xl p-8 m-8">
+		<Tasker msg="Welcome to Go Tasker!"/>
+	</div>
 </template>
 
 <script>
