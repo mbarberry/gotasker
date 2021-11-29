@@ -9,7 +9,7 @@ import (
 	"time"
 	"log"
 
-//	"github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
@@ -37,10 +37,10 @@ var collection *mongo.Collection
 var ctx = context.TODO()
 
 func init() {
-	//err := godotenv.Load()
-  	//if err != nil {
-    //	log.Fatal("Error loading .env file")
-  	//}
+	err := godotenv.Load()
+  	if err != nil {
+    	log.Fatal("Error loading .env file")
+  	}
 
 	uri := os.Getenv("DATABASE_URI")
     clientOptions := options.Client().ApplyURI(uri)
@@ -58,6 +58,8 @@ func init() {
 
 
 func main(){
+	port := os.Getenv("PORT")
+
 	http.HandleFunc("/api/index", indexHandler)
 	http.HandleFunc("/api/rm", deleteHandler)
 	http.HandleFunc("/api/done", doneHandler)
@@ -68,7 +70,7 @@ func main(){
 
 	fmt.Println("Server listening on port 5000")
 	log.Panic(
-		http.ListenAndServe(":5000", nil),
+		http.ListenAndServe(":" + port, nil),
 	)
 }
 
