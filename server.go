@@ -9,7 +9,7 @@ import (
 	"time"
 	"log"
 
-	"github.com/joho/godotenv"
+//	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
@@ -37,10 +37,10 @@ var collection *mongo.Collection
 var ctx = context.TODO()
 
 func init() {
-	err := godotenv.Load()
-  	if err != nil {
-    	log.Fatal("Error loading .env file")
-  	}
+//	err := godotenv.Load()
+//  	if err != nil {
+//    	log.Fatal("Error loading .env file")
+//  	}
 
 	uri := os.Getenv("DATABASE_URI")
     clientOptions := options.Client().ApplyURI(uri)
@@ -127,28 +127,25 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	task := request.Task 	
 	fmt.Printf("The task to add is: %s\n", task)
 	if task == "" {
-	//	w.WriteHeader(400)
-	//	fmt.Fprintf(w, "Cannot add an empty task.")
 		http.Error(w, "Cannot add an empty task.", http.StatusBadRequest)
 		return 
-	} //  else {
-		addTask := &Task{
-			ID:        primitive.NewObjectID(),
-        	CreatedAt: time.Now(),
-        	UpdatedAt: time.Now(),
-        	Text:      task,
-        	Completed: false,
-		}
-    	_, err = collection.InsertOne(ctx, addTask)
+	} 	
+	addTask := &Task{
+		ID:        primitive.NewObjectID(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Text:      task,
+		Completed: false,
+	}
+    _, err = collection.InsertOne(ctx, addTask)
 	
-		response, err := json.Marshal(addTask)
-		if err != nil {
-			panic(err)
-		}
+	response, err := json.Marshal(addTask)
+	if err != nil {
+		panic(err)
+	}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
-//	}	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(response)
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
