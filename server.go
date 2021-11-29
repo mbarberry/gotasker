@@ -9,7 +9,7 @@ import (
 	"time"
 	"log"
 
-	"github.com/joho/godotenv"
+//	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
@@ -37,15 +37,15 @@ var collection *mongo.Collection
 var ctx = context.TODO()
 
 func init() {
-	err := godotenv.Load()
-  	if err != nil {
-    	log.Fatal("Error loading .env file")
-  	}
+	//err := godotenv.Load()
+  	//if err != nil {
+    //	log.Fatal("Error loading .env file")
+  	//}
 
 	uri := os.Getenv("DATABASE_URI")
     clientOptions := options.Client().ApplyURI(uri)
 
-    client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
     if err != nil {
         log.Fatal(err)
     }
