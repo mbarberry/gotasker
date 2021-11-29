@@ -1,1 +1,1 @@
-web: bin/server.go
+web: bin/post
