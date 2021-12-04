@@ -6,7 +6,7 @@
 		<button @click="handleSubmit" class="bg-blue-400 w-24 my-12">Add</button>
 	</div>
 	<div class="w-full h-full">
-		<table class="my-0 mx-auto" v-if="processData">
+		<table class="my-0 mx-auto">
 			<tr>
 				<th class="table-header">Task</th>
 				<th class="table-header">Status</th>
@@ -15,7 +15,7 @@
 			</tr>
 			<tr v-for="task in tasks" v-bind:task="task" v-bind:key="task.ID">
 				<td class="table-data">{{ task.Text }}</td>
-				<td class="table-data" :class="{ 'bg-green-300': task.Completed === 'Complete', 'bg-yellow-300': task.Completed === 'Pending' }">{{ task.Completed }}</td>
+				<td class="table-data" :class="{ 'bg-green-300': task.Status === 'Complete', 'bg-yellow-300': task.Status === 'Pending' }">{{ task.Status }}</td>
 				<td class="table-data">
 					<button @click="markComplete(task.Text)" :disabled="task.Completed === 'Complete'">
 					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
@@ -54,9 +54,11 @@ export default {
 		axios 
 			.get("/api/index")
 			.then(res => {
-				console.log(res.data)
+				res.data.forEach(task => {
+					(task.Completed === true) ? task.Status = "Complete" : task.Status = "Pending"
+				})
 				this.tasks = res.data
-			})
+			})	
 			.catch(err => console.err(err))
 	},
 	handleSubmit() {
@@ -85,18 +87,6 @@ export default {
 			.then(() => refreshData())
 			.then(() => console.log("Task successfully deleted."))
 			.catch(err => console.log(err))
-	}
-  },
-  computed: {
-	processData: function() {
-		this.tasks.forEach(task => {
-			if (task.Completed === true) {
-				task.Completed = "Complete"
-			} else {
-				task.Completed = "Pending"
-			}
-		})
-		return this.tasks
 	}
   },
 }
