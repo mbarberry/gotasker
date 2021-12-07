@@ -1,24 +1,24 @@
-package main 
+package main
 
 import (
-	"net/http"
+	"context"
 	"encoding/json"
 	"fmt"
-	"context"
+	"log"
+	"net/http"
 	"os"
 	"time"
-	"log"
 
-//	"github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Request struct {
-	Command string `json:"command"` 
-	Task string `json:"task"`
+	Command string `json:"command"`
+	Task    string `json:"task"`
 }
 
 type Response struct {
@@ -26,29 +26,29 @@ type Response struct {
 }
 
 type Task struct {
-    ID        primitive.ObjectID `bson:"_id"`
-    CreatedAt time.Time          `bson:"created_at"`
-    UpdatedAt time.Time          `bson:"updated_at"`
-    Text      string             `bson:"text"`
-    Completed bool               `bson:"completed"`
+	ID        primitive.ObjectID `bson:"_id"`
+	CreatedAt time.Time          `bson:"created_at"`
+	UpdatedAt time.Time          `bson:"updated_at"`
+	Text      string             `bson:"text"`
+	Completed bool               `bson:"completed"`
 }
 
 var collection *mongo.Collection
 var ctx = context.TODO()
 
 func init() {
-//	err := godotenv.Load()
-//  	if err != nil {
-//    	log.Fatal("Error loading .env file")
-//  	}
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	uri := os.Getenv("DATABASE_URI")
-    clientOptions := options.Client().ApplyURI(uri)
+	clientOptions := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(ctx, clientOptions)
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -56,8 +56,7 @@ func init() {
 	collection = client.Database("tasker").Collection("tasks")
 }
 
-
-func main(){
+func main() {
 	port := os.Getenv("PORT")
 
 	http.HandleFunc("/api/index", indexHandler)
@@ -70,7 +69,7 @@ func main(){
 
 	fmt.Println("Server listening on port 5000")
 	log.Panic(
-		http.ListenAndServe(":" + port, nil),
+		http.ListenAndServe(":"+port, nil),
 	)
 }
 
@@ -79,31 +78,31 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	var tasks []*Task
 
 	cur, err := collection.Find(ctx, filter)
-    if err != nil {
-    	w.WriteHeader(400)
-        fmt.Fprintf(w, "Error finding collection.")
+	if err != nil {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Error finding collection.")
 	}
 
-    for cur.Next(ctx) {
-        var t Task
-        err := cur.Decode(&t)
-        if err != nil {
-        	w.WriteHeader(400)
-			fmt.Fprintf(w,"Error parsing data." )
+	for cur.Next(ctx) {
+		var t Task
+		err := cur.Decode(&t)
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintf(w, "Error parsing data.")
 		}
 
-        tasks = append(tasks, &t)
-    }
+		tasks = append(tasks, &t)
+	}
 
-    if err := cur.Err(); err != nil {
-        w.WriteHeader(400)
+	if err := cur.Err(); err != nil {
+		w.WriteHeader(400)
 		fmt.Fprintf(w, "Database error.")
-    }
+	}
 
-    cur.Close(ctx)
+	cur.Close(ctx)
 
-    if len(tasks) == 0 {
-    	w.WriteHeader(400)
+	if len(tasks) == 0 {
+		w.WriteHeader(400)
 		fmt.Fprintf(w, "No tasks to return.")
 	}
 
@@ -121,15 +120,15 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		w.WriteHeader(400)
-        fmt.Fprintf(w, "Decode error! please check your JSON formating.")
+		fmt.Fprintf(w, "Decode error! please check your JSON formating.")
 	}
 
-	task := request.Task 	
+	task := request.Task
 	fmt.Printf("The task to add is: %s\n", task)
 	if task == "" {
 		http.Error(w, "Cannot add an empty task.", http.StatusBadRequest)
-		return 
-	} 	
+		return
+	}
 	addTask := &Task{
 		ID:        primitive.NewObjectID(),
 		CreatedAt: time.Now(),
@@ -137,8 +136,8 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		Text:      task,
 		Completed: false,
 	}
-    _, err = collection.InsertOne(ctx, addTask)
-	
+	_, err = collection.InsertOne(ctx, addTask)
+
 	response, err := json.Marshal(addTask)
 	if err != nil {
 		panic(err)
@@ -152,24 +151,24 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	request := Request{}
 
 	err := json.NewDecoder(r.Body).Decode(&request)
-     if err != nil {
-         w.WriteHeader(400)
-         fmt.Fprintf(w, "Decode error! please check your JSON formating.")
-     }
+	if err != nil {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Decode error! please check your JSON formating.")
+	}
 
 	task := request.Task
 	filter := bson.D{primitive.E{Key: "text", Value: task}}
 
-    res, err := collection.DeleteOne(ctx, filter)
-    if err != nil {
-    	w.WriteHeader(400)
-        fmt.Fprintf(w, "Error deleting task.")
+	res, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Error deleting task.")
 	}
 
-    if res.DeletedCount == 0 {
+	if res.DeletedCount == 0 {
 		w.WriteHeader(400)
-        fmt.Fprintf(w, "No tasks were deleted")
-    }
+		fmt.Fprintf(w, "No tasks were deleted")
+	}
 
 	serverResponse := &Response{
 		Message: "Task successfully deleted.",
@@ -189,26 +188,26 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-    	w.WriteHeader(400)
-    	fmt.Fprintf(w, "Decode error! please check your JSON formating.")
-    }
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Decode error! please check your JSON formating.")
+	}
 
 	task := request.Task
 	filter := bson.D{primitive.E{Key: "text", Value: task}}
-    update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-        primitive.E{Key: "completed", Value: true},
-    }}}
-    _ = collection.FindOneAndUpdate(ctx, filter, update)
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "completed", Value: true},
+	}}}
+	_ = collection.FindOneAndUpdate(ctx, filter, update)
 
 	serverResponse := &Response{
-        Message: "Status successfully updated.",
-    }
-    response, err := json.Marshal(serverResponse)
-    if err != nil {
-        panic(err)
-    }
+		Message: "Status successfully updated.",
+	}
+	response, err := json.Marshal(serverResponse)
+	if err != nil {
+		panic(err)
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(response)
 
 }
