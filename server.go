@@ -23,6 +23,7 @@ type Request struct {
 
 type Response struct {
 	Message string `json:"message"`
+	ID      string `json:"id"`
 }
 
 type Task struct {
@@ -156,8 +157,10 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Decode error! please check your JSON formating.")
 	}
 
-	task := request.Task
-	filter := bson.D{primitive.E{Key: "text", Value: task}}
+	taskId := request.Task
+	idPrimitive, err := primitive.ObjectIDFromHex(taskId)
+
+	filter := bson.D{primitive.E{Key: "_id", Value: idPrimitive}}
 
 	res, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
@@ -172,6 +175,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	serverResponse := &Response{
 		Message: "Task successfully deleted.",
+		ID:      taskId,
 	}
 
 	response, err := json.Marshal(serverResponse)
@@ -188,26 +192,45 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "Decode error! please check your JSON formating.")
+		http.Error(w, "Bad JSON formatting.", http.StatusBadRequest)
+		return
 	}
 
-	task := request.Task
-	filter := bson.D{primitive.E{Key: "text", Value: task}}
+	taskId := request.Task
+	idPrimitive, err := primitive.ObjectIDFromHex(taskId)
+
+	filter := bson.D{primitive.E{Key: "_id", Value: idPrimitive}}
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "completed", Value: true},
 	}}}
-	_ = collection.FindOneAndUpdate(ctx, filter, update)
+
+	var updatedDocument bson.M
+	err = collection.FindOneAndUpdate(
+		ctx,
+		filter,
+		update,
+	).Decode(&updatedDocument)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Cannot find task to update.", http.StatusBadRequest)
+			return
+		}
+	}
+
+	mongoId := updatedDocument["_id"]
+	stringObjectID := mongoId.(primitive.ObjectID).Hex()
 
 	serverResponse := &Response{
 		Message: "Status successfully updated.",
+		ID:      stringObjectID,
 	}
+
 	response, err := json.Marshal(serverResponse)
 	if err != nil {
-		panic(err)
+		log.Println("Error encoding JSON.")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
-
 }
