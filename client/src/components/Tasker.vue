@@ -61,7 +61,7 @@ export default {
 				})
 				this.tasks = res.data
 			})	
-			.catch(err => console.err(err))
+			.catch(err => console.error(err))
 	},
 	handleSubmit() {
 		const refreshData = this.fetchData
@@ -72,7 +72,7 @@ export default {
 				this.task = ""
 			})
 			.then(() => console.log("Task successfully added."))
-			.catch(err => console.log(err))
+			.catch(err => console.error(err))
 	},
 	markComplete(text) {
 		const refreshData = this.fetchData
@@ -80,7 +80,7 @@ export default {
 			.post("/api/done", {task: text})
 			.then(() => refreshData())
 			.then(() => console.log("Task successfully marked complete."))
-			.catch(err => console.log(err))
+			.catch(err => console.error(err))
 	},
 	deleteTask(text) {
 		const refreshData = this.fetchData
@@ -88,7 +88,7 @@ export default {
 			.post("/api/rm", {task: text})
 			.then(() => refreshData())
 			.then(() => console.log("Task successfully deleted."))
-			.catch(err => console.log(err))
+			.catch(err => console.error(err))
 	}
   },
 }
