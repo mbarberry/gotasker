@@ -50,10 +50,10 @@ export default {
     msg: String
   },
   data () {
-	return {
-		task: "",
-		tasks: [],
-	}
+    return {
+        task: "",
+        tasks: [],
+    }
   },
   created () {
 	this.fetchData()
@@ -61,12 +61,12 @@ export default {
   methods: {
 	fetchData() {
 		axios 
-			.get("/api/index")
-			.then(res => {
+            .get("/api/index")
+            .then(res => {
                 let tasksData = [...res.data]
-				tasksData.forEach(task => {
-					(task.Completed === true) ? task.Status = "Complete" : task.Status = "Pending"
-				})
+                tasksData.forEach(task => {
+                    (task.Completed === true) ? task.Status = "Complete" : task.Status = "Pending"
+                })
 				this.tasks = tasksData
 			})	
 			.catch(err => console.error(err))
@@ -91,25 +91,25 @@ export default {
 	},
 	markComplete(id) {
 		axios
-			.post("/api/done", {task: id})
+            .post("/api/done", {task: id})
             .then(res => {
                 const { id } = res.data
                 const task = this.tasks.find(task => task.ID === id)
                 task.Status = "Complete"
                 task.Completed = true
             })
-			.catch(err => console.error(err))
+            .catch(err => console.error(err))
 	},
 	deleteTask(id) {
 		axios
-			.post("/api/rm", {task: id})
-			.then(res => {
+            .post("/api/rm", {task: id})
+            .then(res => {
                 const { id } = res.data
                 const taskIndex = this.tasks.findIndex(task => task.ID === id)
                 const updatedTasks = [...this.tasks.slice(0, taskIndex), ...this.tasks.slice(taskIndex + 1, this.tasks.length)]
                 this.tasks = updatedTasks
             })
-			.catch(err => console.error(err))
+            .catch(err => console.error(err))
 	}
   },
 }
