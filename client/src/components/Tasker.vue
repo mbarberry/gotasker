@@ -61,7 +61,7 @@ export default {
   methods: {
 	fetchData() {
 		axios 
-            .get("/api/index")
+            .get("https://cchmuhg867.execute-api.us-west-2.amazonaws.com/main/api/getTasks")
             .then(res => {
                 let tasksData = [...res.data]
                 tasksData.forEach(task => {
@@ -73,7 +73,7 @@ export default {
 	},
 	handleSubmit() {
         axios
-            .post("/api/add", {task: this.task})
+            .post("https://cchmuhg867.execute-api.us-west-2.amazonaws.com/main/api/addTask", {task: this.task})
             .then(res => {
                 this.task = ""
 
@@ -91,9 +91,9 @@ export default {
 	},
 	markComplete(id) {
 		axios
-            .post("/api/done", {task: id})
+            .post("https://cchmuhg867.execute-api.us-west-2.amazonaws.com/main/api/updateStatus", {task: id})
             .then(res => {
-                const { id } = res.data
+                const id  = res.data
                 const task = this.tasks.find(task => task.ID === id)
                 task.Status = "Complete"
                 task.Completed = true
@@ -102,9 +102,9 @@ export default {
 	},
 	deleteTask(id) {
 		axios
-            .post("/api/rm", {task: id})
+            .post("https://cchmuhg867.execute-api.us-west-2.amazonaws.com/main/api/deleteTask", {task: id})
             .then(res => {
-                const { id } = res.data
+                const id = res.data
                 const taskIndex = this.tasks.findIndex(task => task.ID === id)
                 const updatedTasks = [...this.tasks.slice(0, taskIndex), ...this.tasks.slice(taskIndex + 1, this.tasks.length)]
                 this.tasks = updatedTasks
