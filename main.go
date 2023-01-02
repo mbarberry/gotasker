@@ -16,10 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-/**
-* definitions
- */
-
 var headers = map[string]string{"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}
 var ctx = context.TODO()
 var collection *mongo.Collection
@@ -39,10 +35,6 @@ type Task struct {
 	Text      string             `bson:"text"`
 	Completed bool               `bson:"completed"`
 }
-
-/**
-* drivers
- */
 
 func init() {
 	uri := os.Getenv("DATABASE_URI")
@@ -79,10 +71,6 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return errorResponse(400, string(jsonErrorMessage))
 	}
 }
-
-/**
-* routes
- */
 
 func getRouteHandler() (events.APIGatewayProxyResponse, error) {
 	var tasks []Task
@@ -148,10 +136,6 @@ func deleteTaskHandler(id string) (events.APIGatewayProxyResponse, error) {
 	}
 	return successfulResponse(id)
 }
-
-/**
-* helpers
- */
 
 func getIdFilter(id string) primitive.D {
 	idPrimitive, _ := primitive.ObjectIDFromHex(id)
