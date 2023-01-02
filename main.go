@@ -65,20 +65,19 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	path := request.Path[5:]
-	if path == "getTasks" {
+	switch path {
+	case "getTasks":
 		return getRouteHandler()
-	}
-	if path == "addTask" {
+	case "addTask":
 		return addRouteHandler(jsonBody.Data)
-	}
-	if path == "updateStatus" {
+	case "upateStatus":
 		return updateStatusHandler(jsonBody.Data)
-	}
-	if path == "deleteTask" {
+	case "deleteTask":
 		return deleteTaskHandler(jsonBody.Data)
+	default:
+		jsonErrorMessage := getJSONErrorMesage("Route not found.")
+		return errorResponse(400, string(jsonErrorMessage))
 	}
-	jsonErrorMessage := getJSONErrorMesage("Route not found.")
-	return errorResponse(400, string(jsonErrorMessage))
 }
 
 /**
