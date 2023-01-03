@@ -41,6 +41,7 @@ func init() {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		fmt.Println(err)
+		panic(err)
 	}
 	collection = client.Database("tasker").Collection("tasks")
 }
@@ -54,6 +55,7 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	err := json.Unmarshal([]byte(request.Body), &jsonBody)
 	if err != nil {
 		fmt.Println("Error decoding data.")
+		panic(err)
 	}
 
 	path := request.Path[5:]
