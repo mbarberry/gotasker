@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 @layer components {
-    .table-header {
-      @apply bg-blue-100 border px-8 py-4;
-    }
-    .table-data {
-		@apply border px-8 py-4
-	}
+  .table-header {
+    @apply bg-blue-100 border px-8 py-4;
+  }
+  .table-data {
+    @apply border px-8 py-4;
+  }
 }
