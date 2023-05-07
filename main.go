@@ -16,10 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-/**
-* definitions
- */
-
 var headers = map[string]string{"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}
 var ctx = context.TODO()
 var collection *mongo.Collection
@@ -40,15 +36,12 @@ type Task struct {
 	Completed bool               `bson:"completed"`
 }
 
-/**
-* drivers
- */
-
 func init() {
 	uri := os.Getenv("DATABASE_URI")
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		fmt.Println(err)
+		panic(err)
 	}
 	collection = client.Database("tasker").Collection("tasks")
 }
@@ -62,28 +55,24 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	err := json.Unmarshal([]byte(request.Body), &jsonBody)
 	if err != nil {
 		fmt.Println("Error decoding data.")
+		panic(err)
 	}
 
 	path := request.Path[5:]
-	if path == "getTasks" {
+	switch path {
+	case "getTasks":
 		return getRouteHandler()
-	}
-	if path == "addTask" {
+	case "addTask":
 		return addRouteHandler(jsonBody.Data)
-	}
-	if path == "updateStatus" {
+	case "upateStatus":
 		return updateStatusHandler(jsonBody.Data)
-	}
-	if path == "deleteTask" {
+	case "deleteTask":
 		return deleteTaskHandler(jsonBody.Data)
+	default:
+		jsonErrorMessage := getJSONErrorMesage("Route not found.")
+		return errorResponse(400, string(jsonErrorMessage))
 	}
-	jsonErrorMessage := getJSONErrorMesage("Route not found.")
-	return errorResponse(400, string(jsonErrorMessage))
 }
-
-/**
-* routes
- */
 
 func getRouteHandler() (events.APIGatewayProxyResponse, error) {
 	var tasks []Task
@@ -149,10 +138,6 @@ func deleteTaskHandler(id string) (events.APIGatewayProxyResponse, error) {
 	}
 	return successfulResponse(id)
 }
-
-/**
-* helpers
- */
 
 func getIdFilter(id string) primitive.D {
 	idPrimitive, _ := primitive.ObjectIDFromHex(id)
