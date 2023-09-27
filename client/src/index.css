@@ -9,4 +9,7 @@
   .table-data {
     @apply border px-8 py-4;
   }
+  .attribution {
+    @apply text-white font-bold text-xl;
+  }
 }

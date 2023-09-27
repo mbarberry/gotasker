@@ -4,4 +4,4 @@ node_modules/
 .DS_Store
 main
 main.zip
-public/
+dist/
