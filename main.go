@@ -1,5 +1,5 @@
 // GPL-3.0
-// Copyright (c) Mike Barberry
+// **Copyright (c) Mike Barberry**
 
 package main
 
