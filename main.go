@@ -1,12 +1,9 @@
-// GPL-3.0
-// **Copyright (c) Mike Barberry**
-
 package main
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -20,15 +17,15 @@ import (
 )
 
 var headers = map[string]string{"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}
-var ctx = context.TODO()
+var ctx = context.Background()
 var collection *mongo.Collection
 
 type ErrorMessage struct {
-	Error string `json:"string"`
+	Error string `json:"error"`
 }
 
 type RequestBody struct {
-	Data string `json:"task"`
+	Task string `json:"task"`
 }
 
 type Task struct {
@@ -43,8 +40,7 @@ func init() {
 	uri := os.Getenv("DATABASE_URI")
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		fmt.Println(err)
-		panic(err)
+		log.Printf("error connecting to Mongodb: %v\n", err)
 	}
 	collection = client.Database("tasker").Collection("tasks")
 }
@@ -57,8 +53,7 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	var jsonBody RequestBody
 	err := json.Unmarshal([]byte(request.Body), &jsonBody)
 	if err != nil {
-		fmt.Println("Error decoding data.")
-		panic(err)
+		log.Printf("error decoding data: %v\n", err)
 	}
 
 	path := request.Path[5:]
@@ -66,41 +61,42 @@ func router(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	case "getTasks":
 		return getRouteHandler()
 	case "addTask":
-		return addRouteHandler(jsonBody.Data)
+		return addRouteHandler(jsonBody.Task)
 	case "upateStatus":
-		return updateStatusHandler(jsonBody.Data)
+		return updateStatusHandler(jsonBody.Task)
 	case "deleteTask":
-		return deleteTaskHandler(jsonBody.Data)
+		return deleteTaskHandler(jsonBody.Task)
 	default:
-		jsonErrorMessage := getJSONErrorMesage("Route not found.")
-		return errorResponse(400, string(jsonErrorMessage))
+		return errorResponse(http.StatusBadRequest, &ErrorMessage{Error: "route not found."})
 	}
 }
 
 func getRouteHandler() (events.APIGatewayProxyResponse, error) {
 	var tasks []Task
-	queryFilter := bson.D{{}}
-	queryResults, err := collection.Find(ctx, queryFilter)
+	cursor, err := collection.Find(ctx, bson.D{{}})
 	if err != nil {
-		jsonErrorMessage := getJSONErrorMesage("Error fetching tasks.")
-		return errorResponse(500, string(jsonErrorMessage))
+		return errorResponse(http.StatusInternalServerError, &ErrorMessage{Error: "error fetching tasks."})
 	}
-	for queryResults.Next(ctx) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		var currentTask Task
-		err := queryResults.Decode(&currentTask)
+		err := cursor.Decode(&currentTask)
 		if err != nil {
-			fmt.Println("Error decoding data.")
+			log.Printf("error decoding data: %v\n", err)
 		}
 		tasks = append(tasks, currentTask)
 	}
-	jsonTasks, _ := json.Marshal(tasks)
+	jsonTasks, err := json.Marshal(tasks)
+	if err != nil {
+		log.Printf("error marshaling tasks %v\n", err)
+	}
 	return successfulResponse(string(jsonTasks))
 
 }
 
 func addRouteHandler(task string) (events.APIGatewayProxyResponse, error) {
 	if task == "" {
-		fmt.Println("Invalid input: task must not be empty.")
+		errorResponse(http.StatusBadRequest, &ErrorMessage{Error: "invalid input: task must not be empty."})
 	}
 	taskToAdd := Task{
 		ID:        primitive.NewObjectID(),
@@ -111,12 +107,11 @@ func addRouteHandler(task string) (events.APIGatewayProxyResponse, error) {
 	}
 	_, err := collection.InsertOne(ctx, taskToAdd)
 	if err != nil {
-		jsonErrorMessage := getJSONErrorMesage("Error inserting new task.")
-		return errorResponse(500, string(jsonErrorMessage))
+		return errorResponse(http.StatusInternalServerError, &ErrorMessage{Error: "error inserting new task."})
 	}
 	jsonTaskToAdd, err := json.Marshal(taskToAdd)
 	if err != nil {
-		fmt.Println("Error encoding new task.")
+		log.Printf("error encoding new task: %v\n", err)
 	}
 	return successfulResponse(string(jsonTaskToAdd))
 }
@@ -126,8 +121,7 @@ func updateStatusHandler(id string) (events.APIGatewayProxyResponse, error) {
 	updateTaskOperation := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "completed", Value: true}, primitive.E{Key: "updated_at", Value: time.Now()}}}}
 	_, err := collection.UpdateOne(ctx, filter, updateTaskOperation)
 	if err != nil {
-		jsonErrorMessage := getJSONErrorMesage("Error updating task.")
-		return errorResponse(500, string(jsonErrorMessage))
+		return errorResponse(http.StatusInternalServerError, &ErrorMessage{Error: "error updating task."})
 	}
 	return successfulResponse(id)
 }
@@ -136,36 +130,36 @@ func deleteTaskHandler(id string) (events.APIGatewayProxyResponse, error) {
 	filter := getIdFilter(id)
 	_, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
-		jsonErrorMessage := getJSONErrorMesage("Error deleting task.")
-		return errorResponse(500, string(jsonErrorMessage))
+		return errorResponse(http.StatusInternalServerError, &ErrorMessage{Error: "error deleting task."})
 	}
 	return successfulResponse(id)
 }
 
 func getIdFilter(id string) primitive.D {
-	idPrimitive, _ := primitive.ObjectIDFromHex(id)
+	idPrimitive, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Printf("error creating mongo object id: %v\n", err)
+	}
 	idFilter := bson.D{{Key: "_id", Value: idPrimitive}}
 	return idFilter
 }
 
-func getJSONErrorMesage(message string) []byte {
-	errorMessage := ErrorMessage{Error: message}
-	jsonErrorMessage, _ := json.Marshal(errorMessage)
-	return jsonErrorMessage
-}
-
-func successfulResponse(data string) (events.APIGatewayProxyResponse, error) {
+func successfulResponse(responseBody string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,
 		Headers:    headers,
-		Body:       data,
+		Body:       responseBody,
 	}, nil
 }
 
-func errorResponse(statusCode int, data string) (events.APIGatewayProxyResponse, error) {
+func errorResponse(statusCode int, message *ErrorMessage) (events.APIGatewayProxyResponse, error) {
+	jsonMessage, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("error marshaling error message %v\n", err)
+	}
 	return events.APIGatewayProxyResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
-		Body:       data,
+		Body:       string(jsonMessage),
 	}, nil
 }
